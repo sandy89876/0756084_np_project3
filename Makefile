@@ -1,13 +1,14 @@
 CXX=clang++
-CXXFLAGS=-std=c++11 -Wall -pedantic
-CPP_CGI_SRC=$(wildcard *.cpp)
-CPP_CGI=$(patsubst %.cpp,%.cgi,$(CPP_CGI_SRC))
+CXXFLAGS=-std=c++11 -Wall -pedantic -pthread -lboost_system
+CXX_INCLUDE_DIRS=-I/usr/local/include
+CXX_LIB_DIRS=-L/usr/local/lib
 
-all: $(CPP_CGI)
 
-%.cgi: %.cpp
-	$(CXX) $< -o $@ $(CXXFLAGS)
+all: console.cgi
+
+console.cgi: console.cpp
+	$(CXX) console.cpp -o $@ $(CXX_INCLUDE_DIRS) $(CXX_LIB_DIRS) $(CXXFLAGS)
 
 clean:
-	rm -f $(CPP_CGI)
+	rm -f *.cgi
 
