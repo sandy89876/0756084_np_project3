@@ -1,14 +1,22 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <string>
+#include <fstream>
+#include <boost/algorithm/string/replace.hpp>
 
 using namespace std;
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
-#define INIT 0
-#define READING 1
-#define WRITING 2
+string format_output(string line){
+    int i = line.find("\r");
+    if(i != -1){
+        line = line.substr(0,i);
+    }
+    string tmp =R"(\")";
+    boost::replace_all(line, "\"", tmp);
+    return line;
+}
 
 vector<string> split_line(string input,char* delimeter){
     char *comm = new char[input.length()+1];
@@ -28,22 +36,24 @@ class shellSession: public enable_shared_from_this<shellSession>{
     string ip;
     string port;
     string index;//h0
-    int fno;
-    int status;
+    fstream file;
 
     tcp::resolver _resolver;
     tcp::socket _socket;
     array<char, 1024> _data;
-    string msg;
 
   public:
-    shellSession(io_service& global_io_service, string i, string p, string ind, int f_no)
+    shellSession(io_service& global_io_service, string i, string p, string ind, string f_name)
     : _socket(global_io_service), _resolver(global_io_service){
         ip = i;
         port = p;
         index = ind;
-        fno = f_no;
-        status = INIT;
+
+        file.open(f_name, ios::in);
+        if(!file){
+            cout << "<script>console.log(\"cannot open file\");</script>"; 
+        }
+
         cout << "<script>console.log(\"shellSession construct\");</script>";
     }
     void start(){
@@ -69,7 +79,6 @@ class shellSession: public enable_shared_from_this<shellSession>{
             do_connect(ec, it);
         });
 
-      // async_resolve(tcp::resolver::query query(ip, port), do_connect);
     }
     void do_connect(const boost::system::error_code &ec, tcp::resolver::iterator it){
         auto self(shared_from_this());
@@ -88,38 +97,53 @@ class shellSession: public enable_shared_from_this<shellSession>{
         if(!ec){
             cout << "<script>console.log(\"do_read called\");</script>";
             
+            _data = {{}};
             // The connection was successful
             _socket.async_read_some(buffer(_data),[this,self](boost::system::error_code ec, size_t length) {
                 if (!ec){
                     string tmp(_data.begin(), _data.end());
-
+                    // cout << "<script>console.log(\"receive:" << tmp <<"\");</script>";
                     vector<string> msg_lines = split_line(tmp,"\n");
                     for(vector<string>::iterator it = msg_lines.begin(); it != msg_lines.end(); ++it){
-                        if((*it).find("\r") != 0){
-                            cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << (*it) << "\\n\");</script>";
-                            if((*it) == "% "){
-                                //do send
-                                do_send();
-                            }else if((*it) == "exit"){
-                                //leave
+                        if((*it).find("\r\r") != 0){
+                            if((*it) != "% "){
+                                string tmp = format_output(*it);
+                                cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << tmp << "\\n\");</script>";
                             }else{
-                                //keep read(?)
+                                cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << (*it) << "\");</script>";
                             }
                         }
                     }
-
+                    if(tmp.find("% ") != -1){
+                        do_send();
+                    }else if(tmp.find("exit") != -1){
+                        //leave
+                    }
+                    do_read(ec);
+                    
                 }
             });
         }
-        
-
     }
     void do_send(){
-      /*
-      if(){
+        auto self(shared_from_this());
 
-      }
-      */
+        string cmd;
+
+        getline(file, cmd);
+        int i = cmd.find("\r");
+        if(i != -1){
+            cmd = cmd.substr(0,i);
+        }
+        cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << cmd << "\\n\");</script>";
+        _socket.async_send(
+            buffer(cmd),[this, self](boost::system::error_code ec, std::size_t length) {
+            if(!ec){
+                do_read(ec);
+            }
+            
+        });
+        
 
     }
 

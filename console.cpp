@@ -7,10 +7,6 @@
 #include "boost_util.h"
 using namespace std;
 
-#define INIT 0
-#define READING 1
-#define WRITING 2
-
 
 //function def
 void server_setting(string query_string);
@@ -63,16 +59,6 @@ int main(int argc, const char * argv[]){
     */
 
 }   
-/*
-void reading_state_handler(server_info cur_server){
-    //render data on html, if receive '%', change to write state, if receive 'exit', close connection
-
-}
-
-void writing_state_handler(server_info cur_server){
-    //read file and write one line to fd, and change to reading state
-}
-*/
 
 void server_setting(string query_string){
     vector<string> parameters = split_line(query_string,"&");
@@ -85,16 +71,14 @@ void server_setting(string query_string){
             string port = (*(it+1)).substr((*(it+1)).find("=") +1);
             string index = (*it).substr(0,(*it).find("="));
             string fileName = "test_case/"+(*(it+2)).substr((*(it+2)).find("=") +1);
-            FILE *fp = fopen(fileName.c_str(),"r");
-            int fno = fileno(fp);
-
+            
 
             //<td>nplinux1</td>
-            cout << "<script>$('#server_title').append(\"<td>" << ip << "</td>\");</script>";
+            cout << "<script>$('#server_title').append(\"<td>" << ip << ":" << port << "</td>\");</script>";
             //<td id='h0'></td>
             cout << "<script>$('#console_frame').append(\"<td id=\'" << index << "\'></td>\");</script>";
             
-            shared_ptr<shellSession> cur_session(new shellSession(global_io_service, ip, port, index, fno));
+            shared_ptr<shellSession> cur_session(new shellSession(global_io_service, ip, port, index, fileName));
             cur_session->start();
         }
         
