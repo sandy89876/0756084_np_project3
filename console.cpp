@@ -91,6 +91,7 @@ void server_setting(string query_string){
             cout << "<script>$('#console_frame').append(\"<td id=\'" << index << "\'></td>\");</script>";
             
             shared_ptr<shellSession> cur_session(new shellSession(global_io_service, ip, port, index, fno));
+            cur_session->start();
         }
         
     }

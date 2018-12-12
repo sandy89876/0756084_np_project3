@@ -11,7 +11,7 @@ using namespace boost::asio::ip;
 #define WRITING 2
 
 
-class shellSession: enable_shared_from_this<shellSession>{
+class shellSession: public enable_shared_from_this<shellSession>{
   private:
     string ip;
     string port;
@@ -33,7 +33,6 @@ class shellSession: enable_shared_from_this<shellSession>{
         fno = f_no;
         status = INIT;
         cout << "<script>$('#" << index << "').innerHTML += \" session construct \";</script>";
-        start();
     }
     void start(){
         cout << "<script>$('#" << index << "').innerHTML += \" start: \";</script>";
@@ -50,64 +49,59 @@ class shellSession: enable_shared_from_this<shellSession>{
         return index;
     }
   private:
-    void do_resolve(){
+    void do_resolve(){   
+        auto self = shared_from_this();
         cout << "<script>$('#" << index << "').innerHTML += \" before do_resolve self \";</script>";
-        // auto self(get_ptr());
+
         cout << "<script>$('#" << index << "').innerHTML += \" do_resolve called \";</script>";
         tcp::resolver::query query(ip, port);
-        _resolver.async_resolve(query, [this](boost::system::error_code ec, tcp::resolver::iterator it){
+        _resolver.async_resolve(query, [this,self](boost::system::error_code ec, tcp::resolver::iterator it){
             do_connect(ec, it);
         });
 
       // async_resolve(tcp::resolver::query query(ip, port), do_connect);
     }
     void do_connect(const boost::system::error_code &ec, tcp::resolver::iterator it){
-        // auto self(shared_from_this());
+        auto self(shared_from_this());
         // Attempt a connection to the first endpoint in the list. Each endpoint
         // will be tried until we successfully establish a connection.
         cout << "<script>$('#" << index << "').innerHTML += \" do_connect called \";</script>";
         if(!ec){
             tcp::endpoint ep = *it;
-            _socket.async_connect(ep, [this](boost::system::error_code ec){
+            _socket.async_connect(ep, [this,self](boost::system::error_code ec){
+                cout << "<script>console.log(" << index<< ");</script>";
                 do_read(ec);
             });
         }
     }
     void do_read(boost::system::error_code ec){
-        // auto self(shared_from_this());
+        auto self(shared_from_this());
         if(!ec){
             cout << "<script>$('#" << index << "').innerHTML += \" do_read called \";</script>";
             
             // The connection was successful
-            _socket.async_read_some(buffer(_data),[this](boost::system::error_code ec, size_t length) {
-                read_handler(ec, length);
+            _socket.async_read_some(buffer(_data),[this,self](boost::system::error_code ec, size_t length) {
+                if (!ec){
+                    string tmp(_data.begin(), _data.end());
+                    int i = tmp.find("\r\n", 0);
+                    msg = tmp.substr(0,i);
+                    // cout << "<script>console.log(" << self->ip<< ");</script>";
+                    cout << "<script>$('#" << index << "').innerHTML += \"" << msg << "\";</script>";
+                    cout << "<script>$('#" << index << "').innerHTML += \" do_send called \";</script>";
+                    do_send();
+                }
             });
         }
         
 
     }
     void do_send(){
-        // auto self(shared_from_this());
       /*
       if(){
 
       }
       */
 
-    }
-    void read_handler(const boost::system::error_code &ec,size_t bytes_transferred){
-        // auto self(shared_from_this());
-        if (!ec){
-            string tmp(_data.begin(), _data.end());
-            int i = tmp.find("\n", 0);
-            msg = tmp.substr(0,i);
-
-            cout << "<script>$('#" << index << "').innerHTML += \"" << msg << "\";</script>";
-            cout << "<script>$('#" << index << "').innerHTML += \" do_send called \";</script>";
-            do_send();
-
-            
-        }
     }
 
 };
