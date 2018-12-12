@@ -10,6 +10,18 @@ using namespace boost::asio::ip;
 #define READING 1
 #define WRITING 2
 
+vector<string> split_line(string input,char* delimeter){
+    char *comm = new char[input.length()+1];
+    strcpy(comm, input.c_str());
+    
+    char* token = strtok(comm, delimeter);
+    vector<string> result;
+    while(token != NULL){
+        result.push_back(token);
+        token = strtok(NULL, delimeter);
+    }
+    return result;
+}
 
 class shellSession: public enable_shared_from_this<shellSession>{
   private:
@@ -32,10 +44,10 @@ class shellSession: public enable_shared_from_this<shellSession>{
         index = ind;
         fno = f_no;
         status = INIT;
-        cout << "<script>$('#" << index << "').innerHTML += \" session construct \";</script>";
+        cout << "<script>console.log(\"shellSession construct\");</script>";
     }
     void start(){
-        cout << "<script>$('#" << index << "').innerHTML += \" start: \";</script>";
+        cout << "<script>console.log(\"start called\");</script>";
         do_resolve();
     }
     shared_ptr<shellSession> get_ptr(){
@@ -51,9 +63,7 @@ class shellSession: public enable_shared_from_this<shellSession>{
   private:
     void do_resolve(){   
         auto self = shared_from_this();
-        cout << "<script>$('#" << index << "').innerHTML += \" before do_resolve self \";</script>";
-
-        cout << "<script>$('#" << index << "').innerHTML += \" do_resolve called \";</script>";
+        cout << "<script>console.log(\"do_resolve called\");</script>";
         tcp::resolver::query query(ip, port);
         _resolver.async_resolve(query, [this,self](boost::system::error_code ec, tcp::resolver::iterator it){
             do_connect(ec, it);
@@ -65,11 +75,10 @@ class shellSession: public enable_shared_from_this<shellSession>{
         auto self(shared_from_this());
         // Attempt a connection to the first endpoint in the list. Each endpoint
         // will be tried until we successfully establish a connection.
-        cout << "<script>$('#" << index << "').innerHTML += \" do_connect called \";</script>";
+        cout << "<script>console.log(\"do_connect called\");</script>";
         if(!ec){
             tcp::endpoint ep = *it;
             _socket.async_connect(ep, [this,self](boost::system::error_code ec){
-                cout << "<script>console.log(" << index<< ");</script>";
                 do_read(ec);
             });
         }
@@ -77,18 +86,28 @@ class shellSession: public enable_shared_from_this<shellSession>{
     void do_read(boost::system::error_code ec){
         auto self(shared_from_this());
         if(!ec){
-            cout << "<script>$('#" << index << "').innerHTML += \" do_read called \";</script>";
+            cout << "<script>console.log(\"do_read called\");</script>";
             
             // The connection was successful
             _socket.async_read_some(buffer(_data),[this,self](boost::system::error_code ec, size_t length) {
                 if (!ec){
                     string tmp(_data.begin(), _data.end());
-                    int i = tmp.find("\r\n", 0);
-                    msg = tmp.substr(0,i);
-                    // cout << "<script>console.log(" << self->ip<< ");</script>";
-                    cout << "<script>$('#" << index << "').innerHTML += \"" << msg << "\";</script>";
-                    cout << "<script>$('#" << index << "').innerHTML += \" do_send called \";</script>";
-                    do_send();
+
+                    vector<string> msg_lines = split_line(tmp,"\n");
+                    for(vector<string>::iterator it = msg_lines.begin(); it != msg_lines.end(); ++it){
+                        if((*it).find("\r") != 0){
+                            cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << (*it) << "\\n\");</script>";
+                            if((*it) == "% "){
+                                //do send
+                                do_send();
+                            }else if((*it) == "exit"){
+                                //leave
+                            }else{
+                                //keep read(?)
+                            }
+                        }
+                    }
+
                 }
             });
         }

@@ -13,7 +13,6 @@ using namespace std;
 
 
 //function def
-vector<string> split_line(string input,char* delimeter);
 void server_setting(string query_string);
 io_service global_io_service;
 
@@ -34,6 +33,11 @@ string html_content = R"(Content-Type:text/html
           crossorigin="anonymous"
         />
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <style>
+            table{
+                white-space: pre-wrap;
+            }
+        </style>
     </head>
     <body>
         <table class="table table-dark">
@@ -96,18 +100,4 @@ void server_setting(string query_string){
         
     }
     global_io_service.run();
-}
-
-
-vector<string> split_line(string input,char* delimeter){
-    char *comm = new char[input.length()+1];
-    strcpy(comm, input.c_str());
-    
-    char* token = strtok(comm, delimeter);
-    vector<string> result;
-    while(token != NULL){
-        result.push_back(token);
-        token = strtok(NULL, delimeter);
-    }
-    return result;
 }
