@@ -45,19 +45,17 @@ class EchoSession : public enable_shared_from_this<EchoSession> {
 
         void start(){
             cout << "start called" << endl;
-            // create_child();
-            read_request();
+            catch_request();
         }
 
     private:
-
-        void read_request() {
+        void catch_request() {
             cout << "do_read called" << endl;
             auto self(shared_from_this());
             _socket.async_read_some(buffer(_data, max_length),[this, self](boost::system::error_code ec, std::size_t length) {
                 if(!ec){
                     string tmp(_data.begin(),_data.end());
-                    cout << "tmp=" << tmp << endl; 
+                    cout << "http request:" << endl << tmp << endl; 
                     parse_request(tmp);
                     create_child();
                 }
@@ -68,7 +66,7 @@ class EchoSession : public enable_shared_from_this<EchoSession> {
         void parse_request(string request){
             vector<string> http_headers = split_line(request, "\r\n");
             for(vector<string>::iterator it = http_headers.begin(); it != http_headers.end(); ++it){
-                cout << "" << *it << "!" << endl;     
+                cout << *it << "..." << endl;     
             }
 
             string tmp = (split_line(http_headers[0], " "))[1];
@@ -85,15 +83,15 @@ class EchoSession : public enable_shared_from_this<EchoSession> {
             getcwd(path, sizeof(path));
             string working_path(path);
             cout << "working_path = " << working_path << endl;
-            execute_file_path = working_path + request_uri.substr(1);
-
+            execute_file_path = working_path + "/" + request_uri.substr(1);
+            cout << "execute_file_path = " << execute_file_path << endl;
         }
-        // void do_write(std::size_t length) {
-        //     auto self(shared_from_this());
-        //     _socket.async_send(buffer(_data, length),[this, self](boost::system::error_code ec, std::size_t /* length */) {
-        //         if (!ec) do_read();
-        //     });
-        // }
+
+        void do_write() {
+            auto self(shared_from_this());
+            _socket.async_send(buffer(_data, max_length),[this, self](boost::system::error_code ec, size_t  transfered_length ) {
+            });
+        }
 
         void set_cgi_env(){
             setenv("REQUEST_METHOD", "GET", 1);
@@ -106,8 +104,6 @@ class EchoSession : public enable_shared_from_this<EchoSession> {
             setenv("REMOTE_ADDR", "", 1);
             setenv("REMOTE_PORT", "", 1);
         }
-
-
 
         void create_child(){
 
@@ -123,8 +119,11 @@ class EchoSession : public enable_shared_from_this<EchoSession> {
                 cout << "childddd" << endl;
 
                 set_cgi_env();
+                cout << "before write" << endl;
+                _data = {"HTTP/1.1 200 OK\r\n"};
+                do_write();
+                cout << "after write" << endl;
                 dup2(_socket.native_handle(), STDOUT_FILENO);
-                cout << "HTTP/1.1 200 OK" << endl;
                 execlp(execute_file_path.c_str(), NULL);
 
             }else{
@@ -151,9 +150,8 @@ class EchoServer {
                 if (!ec){
                     make_shared<EchoSession>(move(_socket))->start();
                 }
-            cout << "do_accept called" << endl;
-            // cout << "_socket=" << _socket << endl;
-            do_accept();
+                cout << "do_accept called" << endl;
+                do_accept();
             });
         }
 };
