@@ -15,8 +15,6 @@ string format_output(string line){
     }
     string tmp =R"(\")";
     boost::replace_all(line, "\"", tmp);
-    // boost::replace_all(line, "<", "&lt;");
-    // boost::replace_all(line, ">", "&gt;");
     return line;
 }
 
@@ -118,10 +116,13 @@ class shellSession: public enable_shared_from_this<shellSession>{
                     }
                     if(tmp.find("% ") != -1){
                         do_send();
-                    }else if(tmp.find("exit") != -1){
-                        //leave
                     }
-                    do_read(ec);
+
+                    if(tmp.find("exit") == string::npos){
+                        //not leave
+                        do_read(ec);
+                    }
+                    
                     
                 }
             });

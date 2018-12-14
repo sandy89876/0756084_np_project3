@@ -55,11 +55,6 @@ int main(int argc, const char * argv[]){
 
     string query_string = getenv("QUERY_STRING");
     server_setting(query_string);
-    /*
-    while(client_num > 0){
-        
-    }
-    */
 
 }   
 
