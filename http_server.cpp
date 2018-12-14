@@ -34,13 +34,25 @@ class EchoSession : public enable_shared_from_this<EchoSession> {
         ip::tcp::socket _socket;
         array<char, max_length> _data;
 
+        //cgi environment variables
         string request_uri; // /xxx.cgi
         string query_string; //h0=...
+        string http_host;
+        string server_addr;
+        string server_port;
+        string remote_addr;
+        string remote_port;
+
         string execute_file_path;
 
     public:
         EchoSession(ip::tcp::socket socket) : _socket(move(socket)) {
             query_string="";
+            server_addr = _socket.local_endpoint().address().to_string();
+            server_port = to_string(_socket.local_endpoint().port());
+            remote_addr = _socket.remote_endpoint().address().to_string();
+            remote_port = to_string(_socket.remote_endpoint().port());
+
         }
 
         void start(){
@@ -79,6 +91,10 @@ class EchoSession : public enable_shared_from_this<EchoSession> {
                 request_uri = tmp;
                 cout << "request_uri= " << request_uri << endl;
             }
+
+            tmp = (split_line(http_headers[1], " "))[1];
+            http_host = tmp.substr(0, tmp.find(":"));
+
             char path[100];
             getcwd(path, sizeof(path));
             string working_path(path);
@@ -97,12 +113,12 @@ class EchoSession : public enable_shared_from_this<EchoSession> {
             setenv("REQUEST_METHOD", "GET", 1);
             setenv("REQUEST_URI", request_uri.c_str(), 1);
             setenv("QUERY_STRING", query_string.c_str(), 1);
-            setenv("SERVER_PROTOCOL", "", 1);
-            setenv("HTTP_HOST", "", 1);
-            setenv("SERVER_ADDR", "", 1);
-            setenv("SERVER_PORT", "", 1);
-            setenv("REMOTE_ADDR", "", 1);
-            setenv("REMOTE_PORT", "", 1);
+            setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+            setenv("HTTP_HOST", http_host.c_str(), 1);
+            setenv("SERVER_ADDR", server_addr.c_str(), 1);
+            setenv("SERVER_PORT", server_port.c_str(), 1);
+            setenv("REMOTE_ADDR", remote_addr.c_str(), 1);
+            setenv("REMOTE_PORT", remote_port.c_str(), 1);
         }
 
         void create_child(){
