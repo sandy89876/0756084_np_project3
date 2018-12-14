@@ -15,6 +15,8 @@ string format_output(string line){
     }
     string tmp =R"(\")";
     boost::replace_all(line, "\"", tmp);
+    // boost::replace_all(line, "<", "&lt;");
+    // boost::replace_all(line, ">", "&gt;");
     return line;
 }
 
@@ -40,7 +42,7 @@ class shellSession: public enable_shared_from_this<shellSession>{
 
     tcp::resolver _resolver;
     tcp::socket _socket;
-    array<char, 1024> _data;
+    array<char, 10240> _data;
 
   public:
     shellSession(io_service& global_io_service, string i, string p, string ind, string f_name)
@@ -136,8 +138,8 @@ class shellSession: public enable_shared_from_this<shellSession>{
             cmd = cmd.substr(0,i);
         }
         cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << cmd << "\\n\");</script>";
-        _socket.async_send(
-            buffer(cmd),[this, self](boost::system::error_code ec, std::size_t length) {
+        cmd += "\n";
+        _socket.async_send(buffer(cmd),[this, self](boost::system::error_code ec, std::size_t length) {
             if(!ec){
                 do_read(ec);
             }

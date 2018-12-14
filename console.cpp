@@ -33,6 +33,9 @@ string html_content = R"(Content-Type:text/html
             table{
                 white-space: pre-wrap;
             }
+            html{
+                font-family: Monospace, Times;
+            }
         </style>
     </head>
     <body>
