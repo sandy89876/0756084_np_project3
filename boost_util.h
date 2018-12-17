@@ -51,13 +51,13 @@ class shellSession: public enable_shared_from_this<shellSession>{
 
         file.open(f_name, ios::in);
         if(!file){
-            cout << "<script>console.log(\"cannot open file\");</script>"; 
+            cout << "<script>console.log(\"cannot open file\");</script>" << flush; 
         }
 
-        cout << "<script>console.log(\"shellSession construct\");</script>";
+        cout << "<script>console.log(\"shellSession construct\");</script>" << flush;
     }
     void start(){
-        cout << "<script>console.log(\"start called\");</script>";
+        cout << "<script>console.log(\"start called\");</script>" << flush;
         do_resolve();
     }
     shared_ptr<shellSession> get_ptr(){
@@ -73,7 +73,7 @@ class shellSession: public enable_shared_from_this<shellSession>{
   private:
     void do_resolve(){   
         auto self = shared_from_this();
-        cout << "<script>console.log(\"do_resolve called\");</script>";
+        cout << "<script>console.log(\"do_resolve called\");</script>" << flush;
         tcp::resolver::query query(ip, port);
         _resolver.async_resolve(query, [this,self](boost::system::error_code ec, tcp::resolver::iterator it){
             do_connect(ec, it);
@@ -84,7 +84,7 @@ class shellSession: public enable_shared_from_this<shellSession>{
         auto self(shared_from_this());
         // Attempt a connection to the first endpoint in the list. Each endpoint
         // will be tried until we successfully establish a connection.
-        cout << "<script>console.log(\"do_connect called\");</script>";
+        cout << "<script>console.log(\"do_connect called\");</script>" << flush;
         if(!ec){
             tcp::endpoint ep = *it;
             _socket.async_connect(ep, [this,self](boost::system::error_code ec){
@@ -95,7 +95,7 @@ class shellSession: public enable_shared_from_this<shellSession>{
     void do_read(boost::system::error_code ec){
         auto self(shared_from_this());
         if(!ec){
-            cout << "<script>console.log(\"do_read called\");</script>";
+            cout << "<script>console.log(\"do_read called\");</script>" << flush;
             
             _data = {{}};
             // The connection was successful
@@ -108,9 +108,9 @@ class shellSession: public enable_shared_from_this<shellSession>{
                         if((*it).find("\r\r") != 0){
                             if((*it) != "% "){
                                 string tmp = format_output(*it);
-                                cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << tmp << "\\n\");</script>";
+                                cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << tmp << "\\n\");</script>" << flush;
                             }else{
-                                cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << (*it) << "\");</script>";
+                                cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << (*it) << "\");</script>" << flush;
                             }
                         }
                     }
@@ -138,7 +138,7 @@ class shellSession: public enable_shared_from_this<shellSession>{
         if(i != -1){
             cmd = cmd.substr(0,i);
         }
-        cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << cmd << "\\n\");</script>";
+        cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << cmd << "\\n\");</script>" << flush;
         cmd += "\n";
         _socket.async_send(buffer(cmd),[this, self](boost::system::error_code ec, std::size_t length) {
             if(!ec){
