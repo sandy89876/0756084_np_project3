@@ -141,10 +141,6 @@ class shellSession: public enable_shared_from_this<shellSession>{
         cout << "<script>$('#" << index << "\').text($('#" << index << "\').text() + \"" << cmd << "\\n\");</script>" << flush;
         cmd += "\n";
         _socket.async_send(buffer(cmd),[this, self](boost::system::error_code ec, std::size_t length) {
-            if(!ec){
-                do_read(ec);
-            }
-            
         });
         
 
