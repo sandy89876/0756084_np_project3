@@ -53,7 +53,6 @@ class shellSession: public enable_shared_from_this<shellSession>{
         if(!file){
             cout << "<script>console.log(\"cannot open file\");</script>" << flush; 
         }
-
         cout << "<script>console.log(\"shellSession construct\");</script>" << flush;
     }
     void start(){
@@ -62,13 +61,6 @@ class shellSession: public enable_shared_from_this<shellSession>{
     }
     shared_ptr<shellSession> get_ptr(){
         return shared_from_this();
-    }
-
-    string get_ip(){
-        return ip;
-    }
-    string get_index(){
-        return index;
     }
   private:
     void do_resolve(){   
@@ -102,7 +94,6 @@ class shellSession: public enable_shared_from_this<shellSession>{
             _socket.async_read_some(buffer(_data),[this,self](boost::system::error_code ec, size_t length) {
                 if (!ec){
                     string tmp(_data.begin(), _data.end());
-                    // cout << "<script>console.log(\"receive:" << tmp <<"\");</script>";
                     vector<string> msg_lines = split_line(tmp,"\n");
                     for(vector<string>::iterator it = msg_lines.begin(); it != msg_lines.end(); ++it){
                         if((*it).find("\r\r") != 0){
@@ -117,13 +108,7 @@ class shellSession: public enable_shared_from_this<shellSession>{
                     if(tmp.find("% ") != -1){
                         do_send();
                     }
-
-                    if(tmp.find("exit") == string::npos){
-                        //not leave
-                        do_read(ec);
-                    }
-                    
-                    
+                    do_read(ec);
                 }
             });
         }
